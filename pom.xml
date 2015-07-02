@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -10,18 +11,18 @@
 	</parent>
 
 	<groupId>com.baidu</groupId>
-	<artifactId>jprotobuf</artifactId>
+	<artifactId>jprotobuf-zjd</artifactId>
 	<version>1.7.4-SNAPSHOT</version>
 
 	<name>Jprotobuf</name>
 	<description>A very useful utility library for java programmer using google protobuf.</description>
-	<url>https://github.com/jhunters/jprotobuf/</url>
+	<url>https://github.com/zhanjindong/jprotobuf/</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<java.version>1.6</java.version>
-		<junit.version>4.10</junit.version> 
+		<junit.version>4.10</junit.version>
 		<fest.version>2.0M10</fest.version>
 		<github.global.server>github</github.global.server>
 	</properties>
@@ -35,7 +36,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/jhunters/jprotobuf.git</connection>
 		<developerConnection>scm:git:git@github.com:jhunters/jprotobuf.git</developerConnection>
-		<url>http://github.com/jhunters/jprotobuf</url>
+		<url>http://github.com/zhanjindong/jprotobuf</url>
 	</scm>
 
 	<licenses>
@@ -71,8 +72,24 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<artifactId>commons-lang</artifactId>
+			<groupId>commons-lang</groupId>
+			<version>2.6</version>
+		</dependency>
 	</dependencies>
-
+	<distributionManagement>
+		<repository>
+			<id>nexus-releases</id>
+			<name>Releases</name>
+			<url>http://192.168.77.214:9088/nexus/content/repositories/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>nexus-snapshots</id>
+			<name>Snapshots</name>
+			<url>http://192.168.77.214:9088/nexus/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 	<build>
 		<plugins>
 			<plugin>

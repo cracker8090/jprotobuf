@@ -18,9 +18,12 @@ package com.baidu.bjf.remoting.protobuf;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.baidu.bjf.remoting.protobuf.utils.FieldUtils;
 
@@ -32,272 +35,293 @@ import com.baidu.bjf.remoting.protobuf.utils.FieldUtils;
  */
 public class IDLProxyObject {
 
-    private Codec codec;
+	private Codec codec;
 
-    private Object target;
+	private Object target;
 
-    private Class<?> cls;
+	private Class<?> cls;
 
-    private final Map<String, ReflectInfo> cachedFields = new HashMap<String, ReflectInfo>();
-    
-    private boolean cached = true;
+	private final Map<String, ReflectInfo> cachedFields = new HashMap<String, ReflectInfo>();
 
-    /**
-     * get the cached
-     * 
-     * @return the cached
-     */
-    public boolean isCached() {
-        return cached;
-    }
+	private boolean cached = true;
 
-    /**
-     * set cached value to cached
-     * 
-     * @param cached
-     *            the cached to set
-     */
-    public void setCached(boolean cached) {
-        this.cached = cached;
-    }
+	/**
+	 * get the cached
+	 * 
+	 * @return the cached
+	 */
+	public boolean isCached() {
+		return cached;
+	}
 
-    /**
-     * default construtor to set {@link Codec} target
-     */
-    public IDLProxyObject(Codec codec, Object target, Class<?> cls) {
-        super();
-        if (codec == null) {
-            throw new IllegalArgumentException("param 'codec' is null.");
-        }
-        if (target == null) {
-            throw new IllegalArgumentException("param 'target' is null.");
-        }
-        if (cls == null) {
-            throw new IllegalArgumentException("param 'cls' is null.");
-        }
-        this.codec = codec;
-        this.target = target;
-        this.cls = cls;
+	/**
+	 * set cached value to cached
+	 * 
+	 * @param cached
+	 *            the cached to set
+	 */
+	public void setCached(boolean cached) {
+		this.cached = cached;
+	}
 
-    }
+	/**
+	 * default construtor to set {@link Codec} target
+	 */
+	public IDLProxyObject(Codec codec, Object target, Class<?> cls) {
+		super();
+		if (codec == null) {
+			throw new IllegalArgumentException("param 'codec' is null.");
+		}
+		if (target == null) {
+			throw new IllegalArgumentException("param 'target' is null.");
+		}
+		if (cls == null) {
+			throw new IllegalArgumentException("param 'cls' is null.");
+		}
+		this.codec = codec;
+		this.target = target;
+		this.cls = cls;
 
-    public IDLProxyObject newInstnace() {
-        try {
-            Object object = cls.newInstance();
-            return new IDLProxyObject(codec, object, cls);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
-    
-    private IDLProxyObject doSetFieldValue(String fullField, String field, 
-            Object value, Object object, boolean useCache, Map<String, ReflectInfo> cachedFields) {
-        Field f;
-        // check cache
-        if (useCache) {
-            ReflectInfo info = cachedFields.get(fullField);
-            if (info != null) {
-                setField(value, info.target, info.field);
-                return this;
-            }
-        }
+	}
 
-        int index = field.indexOf('.');
-        if (index != -1) {
-            String parent = field.substring(0, index);
-            String sub = field.substring(index + 1);
+	public IDLProxyObject newInstnace() {
+		try {
+			Object object = cls.newInstance();
+			return new IDLProxyObject(codec, object, cls);
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
 
-            try {
-                f = FieldUtils.findField(object.getClass(), parent);
-                if (f == null) {
-                    throw new RuntimeException("No field '" + parent + "' found at class "
-                            + object.getClass().getName());
-                }
-                Class<?> type = f.getType();
-                f.setAccessible(true);
-                Object o = f.get(object);
-                if (o == null) {
-                    boolean memberClass = type.isMemberClass();
-                    if (memberClass && Modifier.isStatic(type.getModifiers())) {
-                        Constructor<?> constructor = type.getConstructor(new Class[0]);
-                        constructor.setAccessible(true);
-                        o = constructor.newInstance(new Object[0]);
-                    } else if (memberClass) {
-                        Constructor<?> constructor = type.getConstructor(new Class[]{object.getClass()});
-                        constructor.setAccessible(true);
-                        o = constructor.newInstance(new Object[]{object});
-                    } else {
-                        o = type.newInstance();
-                    }
-                    f.set(object, o);
-                }
-                return put(fullField, sub, value, o);
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
-        }
+	private IDLProxyObject doSetFieldValue(String fullField, String field,
+			Object value, Object object, boolean useCache,
+			Map<String, ReflectInfo> cachedFields) {
+		Field f;
+		// check cache
+		if (useCache) {
+			ReflectInfo info = cachedFields.get(fullField);
+			if (info != null) {
+				setField(value, info.target, info.field);
+				return this;
+			}
+		}
 
-        f = FieldUtils.findField(object.getClass(), field);
-        if (f == null) {
-            throw new RuntimeException("No field '" + field + "' found at class " + object.getClass().getName());
-        }
-        if (useCache && !cachedFields.containsKey(fullField)) {
-            cachedFields.put(fullField, new ReflectInfo(f, object));
-        }
-        setField(value, object, f);
+		int index = field.indexOf('.');
+		if (index != -1) {
+			String parent = field.substring(0, index);
+			String sub = field.substring(index + 1);
 
-        return this;
-    }
+			try {
+				f = FieldUtils.findField(object.getClass(), parent);
+				if (f == null) {
+					throw new RuntimeException("No field '" + parent
+							+ "' found at class " + object.getClass().getName());
+				}
+				Class<?> type = f.getType();
+				f.setAccessible(true);
+				Object o = f.get(object);
+				if (o == null) {
+					boolean memberClass = type.isMemberClass();
+					if (memberClass && Modifier.isStatic(type.getModifiers())) {
+						Constructor<?> constructor = type
+								.getConstructor(new Class[0]);
+						constructor.setAccessible(true);
+						o = constructor.newInstance(new Object[0]);
+					} else if (memberClass) {
+						Constructor<?> constructor = type
+								.getConstructor(new Class[] { object.getClass() });
+						constructor.setAccessible(true);
+						o = constructor.newInstance(new Object[] { object });
+					} else {
+						o = type.newInstance();
+					}
+					f.set(object, o);
+				}
+				return put(fullField, sub, value, o);
+			} catch (Exception e) {
+				throw new RuntimeException(e.getMessage(), e);
+			}
+		}
 
-    private IDLProxyObject put(String fullField, String field, Object value, Object object) {
-        return doSetFieldValue(fullField, field, value, object, this.cached, this.cachedFields);
-    }
-    
-    public IDLProxyObject put(String field, Object value) {
-        return put(field, field, value, target);
-    }
+		f = FieldUtils.findField(object.getClass(), field);
+		if (f == null) {
+			throw new RuntimeException("No field '" + field
+					+ "' found at class " + object.getClass().getName());
+		}
+		if (useCache && !cachedFields.containsKey(fullField)) {
+			cachedFields.put(fullField, new ReflectInfo(f, object));
+		}
+		setField(value, object, f);
 
-    /**
-     * @param value
-     * @param object
-     * @param f
-     * @throws SecurityException
-     * @throws IllegalArgumentException
-     * @throws IllegalAccessException
-     */
-    private void setField(Object value, Object object, Field f) {
-        f.setAccessible(true);
-        
-        Object valueToSet = value;
-        try {
-            // check if field type is enum
-            if (Enum.class.isAssignableFrom(f.getType())) {
-                Enum v = Enum.valueOf((Class<Enum>) f.getType(), String.valueOf(value)); {
-                    valueToSet = v;
-                }
-            }
-            f.set(object, valueToSet);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
+		return this;
+	}
 
-    public Object get(String field) {
-        if (target == null) {
-            return null;
-        }
+	private IDLProxyObject put(String fullField, String field, Object value,
+			Object object) {
+		return doSetFieldValue(fullField, field, value, object, this.cached,
+				this.cachedFields);
+	}
 
-        return get(field, field, target);
-    }
-    
-    private Object doGetFieldValue(String fullField, String field, 
-            Object object, boolean useCache, Map<String, ReflectInfo> cachedFields) {
-     // check cache
-        Field f;
-        if (useCache) {
-            ReflectInfo info = cachedFields.get(fullField);
-            if (info != null) {
-                return getField(info.target, info.field);
-            }
-        }
+	public IDLProxyObject put(String field, Object value) {
+		return put(field, field, value, target);
+	}
 
-        int index = field.indexOf('.');
-        if (index != -1) {
-            String parent = field.substring(0, index);
-            String sub = field.substring(index + 1);
+	/**
+	 * @param value
+	 * @param object
+	 * @param f
+	 * @throws SecurityException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
+	private void setField(Object value, Object object, Field f) {
+		f.setAccessible(true);
 
-            try {
-                f = FieldUtils.findField(object.getClass(), parent);
-                if (f == null) {
-                    throw new RuntimeException("No field '" + parent + "' found at class "
-                            + object.getClass().getName());
-                }
-                f.setAccessible(true);
-                Object o = f.get(object);
-                if (o == null) {
-                    return null;
-                }
-                return get(fullField, sub, o);
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
-        }
+		Object valueToSet = value;
+		try {
+			// check if field type is enum
+			if (Enum.class.isAssignableFrom(f.getType())) {
+				Enum v = Enum.valueOf((Class<Enum>) f.getType(),
+						String.valueOf(value));
+				{
+					valueToSet = v;
+				}
+			}
+			// if (f.getType().getName().equals("java.util.List")) {
+			// Method[] ms = object.getClass().getMethods();
+			// for (Method method : ms) {
+			// if (method.getName().equals(
+			// "set" + StringUtils.capitalize(f.getName()))) {
+			// method.invoke(object, value);
+			// break;
+			// }
+			// }
+			// } else {
+			f.set(object, valueToSet);
+			// }
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
 
-        f = FieldUtils.findField(object.getClass(), field);
-        if (f == null) {
-            throw new RuntimeException("No field '" + field + "' found at class " + object.getClass().getName());
-        }
-        if (useCache && !cachedFields.containsKey(fullField)) {
-            cachedFields.put(fullField, new ReflectInfo(f, object));
-        }
-        return getField(object, f);
-    }
+	public Object get(String field) {
+		if (target == null) {
+			return null;
+		}
 
-    /**
-     * @param field
-     * @param target2
-     * @return
-     */
-    private Object get(String fullField, String field, Object object) {
-        return doGetFieldValue(fullField, field, object, this.cached, this.cachedFields);
+		return get(field, field, target);
+	}
 
-    }
+	private Object doGetFieldValue(String fullField, String field,
+			Object object, boolean useCache,
+			Map<String, ReflectInfo> cachedFields) {
+		// check cache
+		Field f;
+		if (useCache) {
+			ReflectInfo info = cachedFields.get(fullField);
+			if (info != null) {
+				return getField(info.target, info.field);
+			}
+		}
 
-    /**
-     * @param object
-     * @param f
-     * @return
-     * @throws IllegalAccessException
-     */
-    private Object getField(Object object, Field f) {
-        f.setAccessible(true);
-        try {
-            return f.get(object);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
+		int index = field.indexOf('.');
+		if (index != -1) {
+			String parent = field.substring(0, index);
+			String sub = field.substring(index + 1);
 
-    public byte[] encode() throws IOException {
-        return codec.encode(target);
-    }
+			try {
+				f = FieldUtils.findField(object.getClass(), parent);
+				if (f == null) {
+					throw new RuntimeException("No field '" + parent
+							+ "' found at class " + object.getClass().getName());
+				}
+				f.setAccessible(true);
+				Object o = f.get(object);
+				if (o == null) {
+					return null;
+				}
+				return get(fullField, sub, o);
+			} catch (Exception e) {
+				throw new RuntimeException(e.getMessage(), e);
+			}
+		}
 
-    public IDLProxyObject decode(byte[] bb) throws IOException {
-        if (bb == null) {
-            throw new IllegalArgumentException("param 'bb' is null");
-        }
-        Object object = codec.decode(bb);
-        return new IDLProxyObject(codec, object, cls);
+		f = FieldUtils.findField(object.getClass(), field);
+		if (f == null) {
+			throw new RuntimeException("No field '" + field
+					+ "' found at class " + object.getClass().getName());
+		}
+		if (useCache && !cachedFields.containsKey(fullField)) {
+			cachedFields.put(fullField, new ReflectInfo(f, object));
+		}
+		return getField(object, f);
+	}
 
-    }
-    
-    public void clearFieldCache() {
-        cachedFields.clear();
-    }
-    
-    
-    /**
-     * get the target
-     * 
-     * @return the target
-     */
-    public Object getTarget() {
-        return target;
-    }
+	/**
+	 * @param field
+	 * @param target2
+	 * @return
+	 */
+	private Object get(String fullField, String field, Object object) {
+		return doGetFieldValue(fullField, field, object, this.cached,
+				this.cachedFields);
 
-    private static class ReflectInfo {
-        private Field field;
-        private Object target;
+	}
 
-        /**
-         * @param field
-         * @param target
-         */
-        public ReflectInfo(Field field, Object target) {
-            super();
-            this.field = field;
-            this.target = target;
-        }
+	/**
+	 * @param object
+	 * @param f
+	 * @return
+	 * @throws IllegalAccessException
+	 */
+	private Object getField(Object object, Field f) {
+		f.setAccessible(true);
+		try {
+			return f.get(object);
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
 
-    }
+	public byte[] encode() throws IOException {
+		return codec.encode(target);
+	}
+
+	public IDLProxyObject decode(byte[] bb) throws IOException {
+		if (bb == null) {
+			throw new IllegalArgumentException("param 'bb' is null");
+		}
+		Object object = codec.decode(bb);
+		return new IDLProxyObject(codec, object, cls);
+
+	}
+
+	public void clearFieldCache() {
+		cachedFields.clear();
+	}
+
+	/**
+	 * get the target
+	 * 
+	 * @return the target
+	 */
+	public Object getTarget() {
+		return target;
+	}
+
+	private static class ReflectInfo {
+		private Field field;
+		private Object target;
+
+		/**
+		 * @param field
+		 * @param target
+		 */
+		public ReflectInfo(Field field, Object target) {
+			super();
+			this.field = field;
+			this.target = target;
+		}
+
+	}
 }
