@@ -312,7 +312,6 @@ public class ProtobufIDLProxy {
 			if (debug) {
 				CodePrinter.printCode(cd.code, "generate jprotobuf code");
 			}
-
 			JDKCompilerHelper.COMPILER.compile(cd.code,
 					ProtobufIDLProxy.class.getClassLoader(), null);
 			compiledClass.add(cd.name);
@@ -555,11 +554,11 @@ public class ProtobufIDLProxy {
 						+ javaType + ".class;}");
 
 				code.append(
-						"public void set"
+						"public void add"
 								+ org.apache.commons.lang.StringUtils
 										.capitalize(field.getName())).append(
 						"(java.util.ArrayList<" + javaType + "> list) { " + field.getName()
-								+ " = list;}");
+								+ ".addAll(list);}");
 			} else {
 				code.append("public ").append(javaType).append(" ")
 						.append(field.getName());

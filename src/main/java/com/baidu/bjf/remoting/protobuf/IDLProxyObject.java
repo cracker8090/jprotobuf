@@ -187,18 +187,18 @@ public class IDLProxyObject {
 					valueToSet = v;
 				}
 			}
-			// if (f.getType().getName().equals("java.util.List")) {
-			// Method[] ms = object.getClass().getMethods();
-			// for (Method method : ms) {
-			// if (method.getName().equals(
-			// "set" + StringUtils.capitalize(f.getName()))) {
-			// method.invoke(object, value);
-			// break;
-			// }
-			// }
-			// } else {
-			f.set(object, valueToSet);
-			// }
+			if (f.getType().getName().equals("java.util.List")) {
+				Method[] ms = object.getClass().getMethods();
+				for (Method method : ms) {
+					if (method.getName().equals(
+							"add" + StringUtils.capitalize(f.getName()))) {
+						method.invoke(object, value);
+						break;
+					}
+				}
+			} else {
+				f.set(object, valueToSet);
+			}
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
