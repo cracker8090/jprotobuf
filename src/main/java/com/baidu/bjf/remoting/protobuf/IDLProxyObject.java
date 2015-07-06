@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 
 import com.baidu.bjf.remoting.protobuf.utils.FieldUtils;
+import com.baidu.bjf.remoting.protobuf.utils.MethodUtils;
 
 /**
  * IDL parsed proxy object
@@ -188,14 +189,11 @@ public class IDLProxyObject {
 				}
 			}
 			if (f.getType().getName().equals("java.util.List")) {
-				Method[] ms = object.getClass().getMethods();
-				for (Method method : ms) {
-					if (method.getName().equals(
-							"add" + StringUtils.capitalize(f.getName()))) {
-						method.invoke(object, value);
-						break;
-					}
-				}
+				// Method[] ms = object.getClass().getMethods();
+				Method method = MethodUtils.findMethod(object.getClass(), "add"
+						+ StringUtils.capitalize(f.getName()),
+						new Class[] { value.getClass() });
+				method.invoke(object, value);
 			} else {
 				f.set(object, valueToSet);
 			}
