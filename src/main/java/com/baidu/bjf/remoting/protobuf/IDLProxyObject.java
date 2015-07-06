@@ -307,6 +307,10 @@ public class IDLProxyObject {
 		return target;
 	}
 
+	public void setTarget(Object target) {
+		this.target = target;
+	}
+
 	private static class ReflectInfo {
 		private Field field;
 		private Object target;
