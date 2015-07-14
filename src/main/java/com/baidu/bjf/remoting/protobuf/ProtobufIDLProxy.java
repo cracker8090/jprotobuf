@@ -557,14 +557,14 @@ public class ProtobufIDLProxy {
 						"public void add"
 								+ org.apache.commons.lang.StringUtils
 										.capitalize(field.getName())).append(
-						"(java.util.ArrayList<" + javaType + "> list) { "
+						"(java.util.ArrayList<" + javaType + "> list) { this."
 								+ field.getName() + ".addAll(list);}");
 
 				code.append(
 						"public void add"
 								+ org.apache.commons.lang.StringUtils
 										.capitalize(field.getName())).append(
-						"(" + javaType + " item) { " + field.getName()
+						"(" + javaType + " item) { this." + field.getName()
 								+ ".add(item);}");
 			} else {
 				code.append("public ").append(javaType).append(" ")
